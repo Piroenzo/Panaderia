@@ -116,3 +116,10 @@ class CashClosingResponse(CashClosingBase):
     
     class Config:
         from_attributes = True
+
+
+class CashClosingSummary(BaseModel):
+    date: date
+    total_sales: float
+    total_cash_sales: float
+    exists: bool = False

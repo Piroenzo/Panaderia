@@ -11,7 +11,7 @@ from models import Product, Sale, SaleItem, CashClosing
 from schemas import (
     ProductCreate, ProductUpdate, ProductResponse,
     SaleCreate, SaleUpdate, SaleResponse, SaleItemCreate, SaleItemResponse,
-    CashClosingCreate, CashClosingUpdate, CashClosingResponse
+    CashClosingCreate, CashClosingUpdate, CashClosingResponse, CashClosingSummary
 )
 
 # Crear tablas
@@ -368,7 +368,7 @@ def get_sales_summary(
 
 # ============ CIERRE DE CAJA ============
 
-@app.get("/api/cash-closing")
+@app.get("/api/cash-closing", response_model=CashClosingResponse | CashClosingSummary)
 def get_cash_closing(
     closing_date: Optional[date] = None,
     db: Session = Depends(get_db)
