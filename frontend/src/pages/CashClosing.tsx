@@ -1,91 +1,102 @@
-import { useEffect, useState } from 'react'
-import { format } from 'date-fns'
-import { cashClosingApi } from '../api/cashClosing'
-import { CashClosing as CashClosingType, CashClosingCreate, CashClosingUpdate } from '../types'
-import { useToast } from '../hooks/useToast'
-import { DollarSign, Calendar, Save } from 'lucide-react'
+import { useEffect, useState } from "react";
+import { format } from "date-fns";
+import { cashClosingApi } from "../api/cashClosing";
+import {
+  CashClosing as CashClosingType,
+  CashClosingCreate,
+  CashClosingUpdate,
+} from "../types";
+import { useToast } from "../hooks/useToast";
+import { DollarSign, Save } from "lucide-react";
 
 const CashClosing = () => {
-  const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'))
-  const [closing, setClosing] = useState<CashClosingType | null>(null)
-  const [loading, setLoading] = useState(false)
-  const [loadingData, setLoadingData] = useState(true)
-  const { showToast, ToastComponent } = useToast()
+  const [selectedDate, setSelectedDate] = useState(
+    format(new Date(), "yyyy-MM-dd"),
+  );
+  const [closing, setClosing] = useState<CashClosingType | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [loadingData, setLoadingData] = useState(true);
+  const [notifiedDate, setNotifiedDate] = useState<string | null>(null);
+  const { showToast, ToastComponent } = useToast();
 
   const [formData, setFormData] = useState<CashClosingCreate>({
-    date: format(new Date(), 'yyyy-MM-dd'),
+    date: format(new Date(), "yyyy-MM-dd"),
     initial_cash: 0,
     counted_cash: 0,
     expenses: 0,
-    expense_notes: '',
+    expense_notes: "",
     withdrawals: 0,
-    notes: '',
-  })
+    notes: "",
+  });
 
   useEffect(() => {
-    loadClosing()
-  }, [selectedDate])
+    loadClosing();
+  }, [selectedDate]);
 
   const loadClosing = async () => {
     try {
-      setLoadingData(true)
-      const data = await cashClosingApi.getByDate(selectedDate)
+      setLoadingData(true);
+      const data = await cashClosingApi.getByDate(selectedDate);
       // Si tiene id, es un cierre existente
       if (data && data.id) {
-        setClosing(data as CashClosingType)
+        setClosing(data as CashClosingType);
         setFormData({
           date: data.date,
           initial_cash: data.initial_cash || 0,
           counted_cash: data.counted_cash || 0,
           expenses: data.expenses || 0,
-          expense_notes: data.expense_notes || '',
+          expense_notes: data.expense_notes || "",
           withdrawals: data.withdrawals || 0,
-          notes: data.notes || '',
-        })
+          notes: data.notes || "",
+        });
+        if (data.date !== notifiedDate) {
+          showToast("Ya existe un cierre de caja para esta fecha", "warning");
+          setNotifiedDate(data.date);
+        }
       } else {
         // No existe cierre, pero tenemos datos de ventas
-        setClosing(data as any) // Guardar datos de ventas aunque no haya cierre
+        setClosing(data as any); // Guardar datos de ventas aunque no haya cierre
         setFormData({
           date: selectedDate,
           initial_cash: 0,
           counted_cash: 0,
           expenses: 0,
-          expense_notes: '',
+          expense_notes: "",
           withdrawals: 0,
-          notes: '',
-        })
+          notes: "",
+        });
       }
     } catch (error: any) {
-      console.error('Error loading closing:', error)
+      console.error("Error loading closing:", error);
       // Si no existe cierre, está bien
       if (error.response?.status !== 404) {
-        showToast(error.message || 'Error al cargar cierre de caja', 'error')
+        showToast(error.message || "Error al cargar cierre de caja", "error");
       }
-      setClosing(null)
+      setClosing(null);
       setFormData({
         date: selectedDate,
         initial_cash: 0,
         counted_cash: 0,
         expenses: 0,
-        expense_notes: '',
+        expense_notes: "",
         withdrawals: 0,
-        notes: '',
-      })
+        notes: "",
+      });
     } finally {
-      setLoadingData(false)
+      setLoadingData(false);
     }
-  }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    
+    e.preventDefault();
+
     if (formData.counted_cash < 0) {
-      showToast('El efectivo contado no puede ser negativo', 'error')
-      return
+      showToast("El efectivo contado no puede ser negativo", "error");
+      return;
     }
 
     try {
-      setLoading(true)
+      setLoading(true);
       if (closing && closing.id) {
         // Preparar datos para actualizar (solo campos que cambiaron)
         const updateData: CashClosingUpdate = {
@@ -96,10 +107,10 @@ const CashClosing = () => {
           expense_notes: formData.expense_notes || undefined,
           withdrawals: formData.withdrawals || 0,
           notes: formData.notes || undefined,
-        }
+        };
         // Actualizar cierre existente
-        await cashClosingApi.update(closing.id, updateData)
-        showToast('Cierre de caja actualizado correctamente', 'success')
+        await cashClosingApi.update(closing.id, updateData);
+        showToast("Cierre de caja actualizado correctamente", "success");
       } else {
         // Preparar datos para crear (todos los campos requeridos)
         const createData: CashClosingCreate = {
@@ -110,24 +121,31 @@ const CashClosing = () => {
           expense_notes: formData.expense_notes || undefined,
           withdrawals: formData.withdrawals || 0,
           notes: formData.notes || undefined,
-        }
+        };
         // Crear nuevo cierre
-        await cashClosingApi.create(createData)
-        showToast('Cierre de caja registrado correctamente', 'success')
+        await cashClosingApi.create(createData);
+        showToast("Cierre de caja registrado correctamente", "success");
       }
-      loadClosing()
+      loadClosing();
     } catch (error: any) {
-      console.error('Error saving closing:', error)
-      const errorMessage = error.response?.data?.detail || error.message || 'Error al guardar cierre de caja'
-      showToast(errorMessage, 'error')
+      console.error("Error saving closing:", error);
+      const errorMessage =
+        error.response?.data?.detail ||
+        error.message ||
+        "Error al guardar cierre de caja";
+      showToast(errorMessage, "error");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   // Calcular valores esperados
-  const expectedCash = (formData.initial_cash || 0) + (closing?.total_cash_sales || 0) - (formData.expenses || 0) - (formData.withdrawals || 0)
-  const difference = (formData.counted_cash || 0) - expectedCash
+  const expectedCash =
+    (formData.initial_cash || 0) +
+    (closing?.total_cash_sales || 0) -
+    (formData.expenses || 0) -
+    (formData.withdrawals || 0);
+  const difference = (formData.counted_cash || 0) - expectedCash;
 
   return (
     <div>
@@ -148,11 +166,11 @@ const CashClosing = () => {
               type="date"
               value={selectedDate}
               onChange={(e) => {
-                setSelectedDate(e.target.value)
-                setFormData({ ...formData, date: e.target.value })
+                setSelectedDate(e.target.value);
+                setFormData({ ...formData, date: e.target.value });
               }}
               className="input"
-              max={format(new Date(), 'yyyy-MM-dd')}
+              max={format(new Date(), "yyyy-MM-dd")}
             />
           </div>
         </div>
@@ -177,7 +195,8 @@ const CashClosing = () => {
                 <div>
                   <p className="text-sm text-gray-600">Total Ventas del Día</p>
                   <p className="text-2xl font-bold text-gray-900">
-                    ${(closing?.total_sales || 0).toLocaleString('es-AR', {
+                    $
+                    {(closing?.total_sales || 0).toLocaleString("es-AR", {
                       minimumFractionDigits: 2,
                       maximumFractionDigits: 2,
                     })}
@@ -186,7 +205,8 @@ const CashClosing = () => {
                 <div>
                   <p className="text-sm text-gray-600">Ventas en Efectivo</p>
                   <p className="text-2xl font-bold text-gray-900">
-                    ${(closing?.total_cash_sales || 0).toLocaleString('es-AR', {
+                    $
+                    {(closing?.total_cash_sales || 0).toLocaleString("es-AR", {
                       minimumFractionDigits: 2,
                       maximumFractionDigits: 2,
                     })}
@@ -198,7 +218,7 @@ const CashClosing = () => {
             {/* Formulario */}
             <div className="card">
               <h3 className="text-lg font-semibold mb-4">Datos del Cierre</h3>
-              
+
               <div className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
@@ -290,9 +310,12 @@ const CashClosing = () => {
                     Notas sobre Gastos
                   </label>
                   <textarea
-                    value={formData.expense_notes || ''}
+                    value={formData.expense_notes || ""}
                     onChange={(e) =>
-                      setFormData({ ...formData, expense_notes: e.target.value })
+                      setFormData({
+                        ...formData,
+                        expense_notes: e.target.value,
+                      })
                     }
                     className="input"
                     rows={2}
@@ -305,8 +328,10 @@ const CashClosing = () => {
                     Notas Adicionales
                   </label>
                   <textarea
-                    value={formData.notes || ''}
-                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                    value={formData.notes || ""}
+                    onChange={(e) =>
+                      setFormData({ ...formData, notes: e.target.value })
+                    }
                     className="input"
                     rows={2}
                     placeholder="Notas adicionales sobre el cierre..."
@@ -322,7 +347,8 @@ const CashClosing = () => {
                 <div className="flex justify-between">
                   <span className="text-gray-700">Fondo Inicial:</span>
                   <span className="font-semibold">
-                    ${(formData.initial_cash || 0).toLocaleString('es-AR', {
+                    $
+                    {(formData.initial_cash || 0).toLocaleString("es-AR", {
                       minimumFractionDigits: 2,
                       maximumFractionDigits: 2,
                     })}
@@ -331,7 +357,8 @@ const CashClosing = () => {
                 <div className="flex justify-between">
                   <span className="text-gray-700">+ Ventas en Efectivo:</span>
                   <span className="font-semibold">
-                    ${(closing?.total_cash_sales || 0).toLocaleString('es-AR', {
+                    $
+                    {(closing?.total_cash_sales || 0).toLocaleString("es-AR", {
                       minimumFractionDigits: 2,
                       maximumFractionDigits: 2,
                     })}
@@ -340,7 +367,8 @@ const CashClosing = () => {
                 <div className="flex justify-between">
                   <span className="text-gray-700">- Gastos:</span>
                   <span className="font-semibold text-red-600">
-                    -${(formData.expenses || 0).toLocaleString('es-AR', {
+                    -$
+                    {(formData.expenses || 0).toLocaleString("es-AR", {
                       minimumFractionDigits: 2,
                       maximumFractionDigits: 2,
                     })}
@@ -349,25 +377,32 @@ const CashClosing = () => {
                 <div className="flex justify-between">
                   <span className="text-gray-700">- Retiros:</span>
                   <span className="font-semibold text-red-600">
-                    -${(formData.withdrawals || 0).toLocaleString('es-AR', {
+                    -$
+                    {(formData.withdrawals || 0).toLocaleString("es-AR", {
                       minimumFractionDigits: 2,
                       maximumFractionDigits: 2,
                     })}
                   </span>
                 </div>
                 <div className="border-t pt-3 flex justify-between">
-                  <span className="text-gray-700 font-medium">Efectivo Esperado:</span>
+                  <span className="text-gray-700 font-medium">
+                    Efectivo Esperado:
+                  </span>
                   <span className="font-semibold">
-                    ${expectedCash.toLocaleString('es-AR', {
+                    $
+                    {expectedCash.toLocaleString("es-AR", {
                       minimumFractionDigits: 2,
                       maximumFractionDigits: 2,
                     })}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-700 font-medium">Efectivo Contado:</span>
+                  <span className="text-gray-700 font-medium">
+                    Efectivo Contado:
+                  </span>
                   <span className="font-semibold">
-                    ${(formData.counted_cash || 0).toLocaleString('es-AR', {
+                    $
+                    {(formData.counted_cash || 0).toLocaleString("es-AR", {
                       minimumFractionDigits: 2,
                       maximumFractionDigits: 2,
                     })}
@@ -377,11 +412,11 @@ const CashClosing = () => {
                   <span className="text-lg font-semibold">Diferencia:</span>
                   <span
                     className={`text-2xl font-bold ${
-                      difference >= 0 ? 'text-green-600' : 'text-red-600'
+                      difference >= 0 ? "text-green-600" : "text-red-600"
                     }`}
                   >
-                    {difference >= 0 ? '+' : ''}
-                    ${difference.toLocaleString('es-AR', {
+                    {difference >= 0 ? "+" : ""}$
+                    {difference.toLocaleString("es-AR", {
                       minimumFractionDigits: 2,
                       maximumFractionDigits: 2,
                     })}
@@ -389,7 +424,7 @@ const CashClosing = () => {
                 </div>
                 {difference !== 0 && (
                   <p className="text-sm text-gray-600 mt-2">
-                    {difference > 0 ? 'Sobrante' : 'Faltante'} de efectivo
+                    {difference > 0 ? "Sobrante" : "Faltante"} de efectivo
                   </p>
                 )}
               </div>
@@ -403,17 +438,17 @@ const CashClosing = () => {
               >
                 <Save className="h-5 w-5" />
                 {loading
-                  ? 'Guardando...'
+                  ? "Guardando..."
                   : closing
-                  ? 'Actualizar Cierre'
-                  : 'Registrar Cierre'}
+                    ? "Actualizar Cierre"
+                    : "Registrar Cierre"}
               </button>
             </div>
           </>
         )}
       </form>
     </div>
-  )
-}
+  );
+};
 
-export default CashClosing
+export default CashClosing;

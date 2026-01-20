@@ -1,100 +1,102 @@
-import { useEffect, useState } from 'react'
-import { productsApi } from '../api/products'
-import { Product, ProductCreate, ProductUpdate } from '../types'
-import { useToast } from '../hooks/useToast'
-import Modal from '../components/Modal'
-import { Plus, Edit, Trash2, Search, Filter, Package } from 'lucide-react'
+import { useEffect, useState } from "react";
+import { productsApi } from "../api/products";
+import { Product, ProductCreate, ProductUpdate } from "../types";
+import { useToast } from "../hooks/useToast";
+import Modal from "../components/Modal";
+import { Plus, Edit, Trash2, Search, Package } from "lucide-react";
 
 const Products = () => {
-  const [products, setProducts] = useState<Product[]>([])
-  const [loading, setLoading] = useState(true)
-  const [searchTerm, setSearchTerm] = useState('')
-  const [categoryFilter, setCategoryFilter] = useState<string>('')
-  const [activeFilter, setActiveFilter] = useState<boolean | null>(null)
-  const [isModalOpen, setIsModalOpen] = useState(false)
-  const [editingProduct, setEditingProduct] = useState<Product | null>(null)
-  const { showToast, ToastComponent } = useToast()
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState<string>("");
+  const [activeFilter, setActiveFilter] = useState<boolean | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const { showToast, ToastComponent } = useToast();
 
   const [formData, setFormData] = useState<ProductCreate>({
-    name: '',
-    category: '',
+    name: "",
+    category: "",
     price: 0,
     active: true,
-  })
+  });
 
   useEffect(() => {
-    loadProducts()
-  }, [searchTerm, categoryFilter, activeFilter])
+    loadProducts();
+  }, [searchTerm, categoryFilter, activeFilter]);
 
   const loadProducts = async () => {
     try {
-      setLoading(true)
-      const params: any = {}
-      if (searchTerm) params.search = searchTerm
-      if (categoryFilter) params.category = categoryFilter
-      if (activeFilter !== null) params.active = activeFilter
-      
-      const data = await productsApi.getAll(params)
-      setProducts(data)
+      setLoading(true);
+      const params: any = {};
+      if (searchTerm) params.search = searchTerm;
+      if (categoryFilter) params.category = categoryFilter;
+      if (activeFilter !== null) params.active = activeFilter;
+
+      const data = await productsApi.getAll(params);
+      setProducts(data);
     } catch (error: any) {
-      showToast(error.message || 'Error al cargar productos', 'error')
+      showToast(error.message || "Error al cargar productos", "error");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
     try {
       if (editingProduct) {
-        await productsApi.update(editingProduct.id, formData as ProductUpdate)
-        showToast('Producto actualizado correctamente', 'success')
+        await productsApi.update(editingProduct.id, formData as ProductUpdate);
+        showToast("Producto actualizado correctamente", "success");
       } else {
-        await productsApi.create(formData)
-        showToast('Producto creado correctamente', 'success')
+        await productsApi.create(formData);
+        showToast("Producto creado correctamente", "success");
       }
-      setIsModalOpen(false)
-      resetForm()
-      loadProducts()
+      setIsModalOpen(false);
+      resetForm();
+      loadProducts();
     } catch (error: any) {
-      showToast(error.message || 'Error al guardar producto', 'error')
+      showToast(error.message || "Error al guardar producto", "error");
     }
-  }
+  };
 
   const handleEdit = (product: Product) => {
-    setEditingProduct(product)
+    setEditingProduct(product);
     setFormData({
       name: product.name,
-      category: product.category || '',
+      category: product.category || "",
       price: product.price,
       active: product.active,
-    })
-    setIsModalOpen(true)
-  }
+    });
+    setIsModalOpen(true);
+  };
 
   const handleDelete = async (id: number) => {
-    if (!confirm('¿Estás seguro de eliminar este producto?')) return
-    
+    if (!confirm("¿Estás seguro de eliminar este producto?")) return;
+
     try {
-      await productsApi.delete(id)
-      showToast('Producto eliminado correctamente', 'success')
-      loadProducts()
+      await productsApi.delete(id);
+      showToast("Producto eliminado correctamente", "success");
+      loadProducts();
     } catch (error: any) {
-      showToast(error.message || 'Error al eliminar producto', 'error')
+      showToast(error.message || "Error al eliminar producto", "error");
     }
-  }
+  };
 
   const resetForm = () => {
     setFormData({
-      name: '',
-      category: '',
+      name: "",
+      category: "",
       price: 0,
       active: true,
-    })
-    setEditingProduct(null)
-  }
+    });
+    setEditingProduct(null);
+  };
 
-  const categories = Array.from(new Set(products.map(p => p.category).filter(Boolean)))
+  const categories = Array.from(
+    new Set(products.map((p) => p.category).filter(Boolean)),
+  );
 
   return (
     <div>
@@ -102,12 +104,14 @@ const Products = () => {
       <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h2 className="text-3xl font-bold text-gray-900">Productos</h2>
-          <p className="text-gray-600 mt-1">Gestiona tu catálogo de productos</p>
+          <p className="text-gray-600 mt-1">
+            Gestiona tu catálogo de productos
+          </p>
         </div>
         <button
           onClick={() => {
-            resetForm()
-            setIsModalOpen(true)
+            resetForm();
+            setIsModalOpen(true);
           }}
           className="btn btn-primary flex items-center gap-2"
         >
@@ -142,10 +146,10 @@ const Products = () => {
             ))}
           </select>
           <select
-            value={activeFilter === null ? '' : activeFilter.toString()}
+            value={activeFilter === null ? "" : activeFilter.toString()}
             onChange={(e) => {
-              const value = e.target.value
-              setActiveFilter(value === '' ? null : value === 'true')
+              const value = e.target.value;
+              setActiveFilter(value === "" ? null : value === "true");
             }}
             className="input"
           >
@@ -171,8 +175,8 @@ const Products = () => {
           <p className="text-gray-600 text-lg">No hay productos</p>
           <p className="text-gray-500 text-sm mt-2">
             {searchTerm || categoryFilter || activeFilter !== null
-              ? 'Intenta ajustar los filtros'
-              : 'Comienza agregando tu primer producto'}
+              ? "Intenta ajustar los filtros"
+              : "Comienza agregando tu primer producto"}
           </p>
         </div>
       ) : (
@@ -192,17 +196,17 @@ const Products = () => {
                 {products.map((product) => (
                   <tr key={product.id}>
                     <td className="font-medium">{product.name}</td>
-                    <td>{product.category || '-'}</td>
-                    <td>${product.price.toLocaleString('es-AR')}</td>
+                    <td>{product.category || "-"}</td>
+                    <td>${product.price.toLocaleString("es-AR")}</td>
                     <td>
                       <span
                         className={`px-2 py-1 rounded-full text-xs font-medium ${
                           product.active
-                            ? 'bg-green-100 text-green-800'
-                            : 'bg-red-100 text-red-800'
+                            ? "bg-green-100 text-green-800"
+                            : "bg-red-100 text-red-800"
                         }`}
                       >
-                        {product.active ? 'Activo' : 'Inactivo'}
+                        {product.active ? "Activo" : "Inactivo"}
                       </span>
                     </td>
                     <td>
@@ -235,10 +239,10 @@ const Products = () => {
       <Modal
         isOpen={isModalOpen}
         onClose={() => {
-          setIsModalOpen(false)
-          resetForm()
+          setIsModalOpen(false);
+          resetForm();
         }}
-        title={editingProduct ? 'Editar Producto' : 'Nuevo Producto'}
+        title={editingProduct ? "Editar Producto" : "Nuevo Producto"}
       >
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
@@ -249,7 +253,9 @@ const Products = () => {
               type="text"
               required
               value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, name: e.target.value })
+              }
               className="input"
               placeholder="Ej: Pan Francés"
             />
@@ -262,7 +268,9 @@ const Products = () => {
             <input
               type="text"
               value={formData.category}
-              onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, category: e.target.value })
+              }
               className="input"
               placeholder="Ej: Pan, Facturas, Tortas"
             />
@@ -279,7 +287,10 @@ const Products = () => {
               step="0.01"
               value={formData.price}
               onChange={(e) =>
-                setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })
+                setFormData({
+                  ...formData,
+                  price: parseFloat(e.target.value) || 0,
+                })
               }
               className="input"
               placeholder="0.00"
@@ -291,7 +302,9 @@ const Products = () => {
               type="checkbox"
               id="active"
               checked={formData.active}
-              onChange={(e) => setFormData({ ...formData, active: e.target.checked })}
+              onChange={(e) =>
+                setFormData({ ...formData, active: e.target.checked })
+              }
               className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
             />
             <label htmlFor="active" className="ml-2 text-sm text-gray-700">
@@ -303,21 +316,21 @@ const Products = () => {
             <button
               type="button"
               onClick={() => {
-                setIsModalOpen(false)
-                resetForm()
+                setIsModalOpen(false);
+                resetForm();
               }}
               className="btn btn-secondary"
             >
               Cancelar
             </button>
             <button type="submit" className="btn btn-primary">
-              {editingProduct ? 'Actualizar' : 'Crear'}
+              {editingProduct ? "Actualizar" : "Crear"}
             </button>
           </div>
         </form>
       </Modal>
     </div>
-  )
-}
+  );
+};
 
-export default Products
+export default Products;

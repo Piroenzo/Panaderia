@@ -1,39 +1,45 @@
-import { useEffect, useState } from 'react'
-import { format } from 'date-fns'
-import { productsApi } from '../api/products'
-import { salesApi } from '../api/sales'
-import { Product, SaleItemCreate } from '../types'
-import { useToast } from '../hooks/useToast'
-import { Plus, Trash2, X } from 'lucide-react'
+import { useEffect, useState } from "react";
+import { format } from "date-fns";
+import { productsApi } from "../api/products";
+import { salesApi } from "../api/sales";
+import { Product, SaleItemCreate } from "../types";
+import { useToast } from "../hooks/useToast";
+import { Plus, Trash2 } from "lucide-react";
 
 const Sales = () => {
-  const [products, setProducts] = useState<Product[]>([])
-  const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'))
-  const [paymentMethod, setPaymentMethod] = useState<'efectivo' | 'tarjeta' | 'transferencia' | 'mixto'>('efectivo')
-  const [items, setItems] = useState<Array<SaleItemCreate & { id: string }>>([])
-  const [notes, setNotes] = useState('')
-  const [loading, setLoading] = useState(false)
-  const { showToast, ToastComponent } = useToast()
+  const [products, setProducts] = useState<Product[]>([]);
+  const [selectedDate, setSelectedDate] = useState(
+    format(new Date(), "yyyy-MM-dd"),
+  );
+  const [paymentMethod, setPaymentMethod] = useState<
+    "efectivo" | "tarjeta" | "transferencia" | "mixto"
+  >("efectivo");
+  const [items, setItems] = useState<Array<SaleItemCreate & { id: string }>>(
+    [],
+  );
+  const [notes, setNotes] = useState("");
+  const [loading, setLoading] = useState(false);
+  const { showToast, ToastComponent } = useToast();
 
   useEffect(() => {
-    loadProducts()
-  }, [])
+    loadProducts();
+  }, []);
 
   const loadProducts = async () => {
     try {
-      const data = await productsApi.getAll({ active: true })
-      setProducts(data)
+      const data = await productsApi.getAll({ active: true });
+      setProducts(data);
     } catch (error: any) {
-      showToast(error.message || 'Error al cargar productos', 'error')
+      showToast(error.message || "Error al cargar productos", "error");
     }
-  }
+  };
 
   const addItem = () => {
     if (products.length === 0) {
-      showToast('No hay productos disponibles', 'warning')
-      return
+      showToast("No hay productos disponibles", "warning");
+      return;
     }
-    const firstProduct = products[0]
+    const firstProduct = products[0];
     setItems([
       ...items,
       {
@@ -42,66 +48,62 @@ const Sales = () => {
         quantity: 1,
         unit_price: firstProduct.price,
       },
-    ])
-  }
+    ]);
+  };
 
   const removeItem = (id: string) => {
-    setItems(items.filter((item) => item.id !== id))
-  }
+    setItems(items.filter((item) => item.id !== id));
+  };
 
   const updateItem = (id: string, field: keyof SaleItemCreate, value: any) => {
     setItems(
       items.map((item) => {
         if (item.id === id) {
-          return { ...item, [field]: value }
+          return { ...item, [field]: value };
         }
-        return item
-      })
-    )
-  }
+        return item;
+      }),
+    );
+  };
 
   const getItemTotal = (item: SaleItemCreate) => {
-    return item.quantity * item.unit_price
-  }
+    return item.quantity * item.unit_price;
+  };
 
   const getTotal = () => {
-    return items.reduce((sum, item) => sum + getItemTotal(item), 0)
-  }
+    return items.reduce((sum, item) => sum + getItemTotal(item), 0);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    
+    e.preventDefault();
+
     if (items.length === 0) {
-      showToast('Debes agregar al menos un item', 'warning')
-      return
+      showToast("Debes agregar al menos un item", "warning");
+      return;
     }
 
     try {
-      setLoading(true)
+      setLoading(true);
       const saleData = {
         date: selectedDate,
         payment_method: paymentMethod,
         items: items.map(({ id, ...rest }) => rest),
         notes: notes || undefined,
-      }
-      await salesApi.create(saleData)
-      showToast('Venta registrada correctamente', 'success')
-      
-      // Reset form
-      setItems([])
-      setNotes('')
-      setPaymentMethod('efectivo')
-      setSelectedDate(format(new Date(), 'yyyy-MM-dd'))
-    } catch (error: any) {
-      showToast(error.message || 'Error al registrar venta', 'error')
-    } finally {
-      setLoading(false)
-    }
-  }
+      };
+      await salesApi.create(saleData);
+      showToast("Venta registrada correctamente", "success");
 
-  const getProductName = (productId: number) => {
-    return products.find((p) => p.id === productId)?.name || 'Producto'
-  }
+      // Reset form
+      setItems([]);
+      setNotes("");
+      setPaymentMethod("efectivo");
+      setSelectedDate(format(new Date(), "yyyy-MM-dd"));
+    } catch (error: any) {
+      showToast(error.message || "Error al registrar venta", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div>
@@ -136,7 +138,11 @@ const Sales = () => {
                 value={paymentMethod}
                 onChange={(e) =>
                   setPaymentMethod(
-                    e.target.value as 'efectivo' | 'tarjeta' | 'transferencia' | 'mixto'
+                    e.target.value as
+                      | "efectivo"
+                      | "tarjeta"
+                      | "transferencia"
+                      | "mixto",
                   )
                 }
                 className="input"
@@ -166,7 +172,9 @@ const Sales = () => {
           {items.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
               <p>No hay items agregados</p>
-              <p className="text-sm mt-2">Haz clic en "Agregar Item" para comenzar</p>
+              <p className="text-sm mt-2">
+                Haz clic en "Agregar Item" para comenzar
+              </p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -184,13 +192,18 @@ const Sales = () => {
                         required
                         value={item.product_id}
                         onChange={(e) =>
-                          updateItem(item.id, 'product_id', parseInt(e.target.value))
+                          updateItem(
+                            item.id,
+                            "product_id",
+                            parseInt(e.target.value),
+                          )
                         }
                         className="input"
                       >
                         {products.map((product) => (
                           <option key={product.id} value={product.id}>
-                            {product.name} - ${product.price.toLocaleString('es-AR')}
+                            {product.name} - $
+                            {product.price.toLocaleString("es-AR")}
                           </option>
                         ))}
                       </select>
@@ -207,7 +220,11 @@ const Sales = () => {
                         step="0.01"
                         value={item.quantity}
                         onChange={(e) =>
-                          updateItem(item.id, 'quantity', parseFloat(e.target.value) || 0)
+                          updateItem(
+                            item.id,
+                            "quantity",
+                            parseFloat(e.target.value) || 0,
+                          )
                         }
                         className="input"
                       />
@@ -226,8 +243,8 @@ const Sales = () => {
                         onChange={(e) =>
                           updateItem(
                             item.id,
-                            'unit_price',
-                            parseFloat(e.target.value) || 0
+                            "unit_price",
+                            parseFloat(e.target.value) || 0,
                           )
                         }
                         className="input"
@@ -240,7 +257,8 @@ const Sales = () => {
                           Subtotal
                         </label>
                         <div className="input bg-gray-100 font-semibold">
-                          ${getItemTotal(item).toLocaleString('es-AR', {
+                          $
+                          {getItemTotal(item).toLocaleString("es-AR", {
                             minimumFractionDigits: 2,
                             maximumFractionDigits: 2,
                           })}
@@ -278,9 +296,12 @@ const Sales = () => {
 
           <div className="border-t pt-4">
             <div className="flex justify-between items-center">
-              <span className="text-lg font-semibold text-gray-700">Total:</span>
+              <span className="text-lg font-semibold text-gray-700">
+                Total:
+              </span>
               <span className="text-3xl font-bold text-primary-600">
-                ${getTotal().toLocaleString('es-AR', {
+                $
+                {getTotal().toLocaleString("es-AR", {
                   minimumFractionDigits: 2,
                   maximumFractionDigits: 2,
                 })}
@@ -293,21 +314,25 @@ const Sales = () => {
           <button
             type="button"
             onClick={() => {
-              setItems([])
-              setNotes('')
+              setItems([]);
+              setNotes("");
             }}
             className="btn btn-secondary"
             disabled={loading}
           >
             Limpiar
           </button>
-          <button type="submit" className="btn btn-primary" disabled={loading || items.length === 0}>
-            {loading ? 'Guardando...' : 'Registrar Venta'}
+          <button
+            type="submit"
+            className="btn btn-primary"
+            disabled={loading || items.length === 0}
+          >
+            {loading ? "Guardando..." : "Registrar Venta"}
           </button>
         </div>
       </form>
     </div>
-  )
-}
+  );
+};
 
-export default Sales
+export default Sales;
